@@ -1,5 +1,5 @@
 {
-  "author": "errl",
+  "author": "Dubbled",
   "bugs": {},
   "gx": {
     "dvcsimport": "gitlab.com/dubbled/dstore"
@@ -58,6 +58,12 @@
       "hash": "QmRuZnMorqodado1yeTQiv1i9rmtKj29CjPSsBKM7DFXV4",
       "name": "go-libp2p-net",
       "version": "1.6.6"
+    },
+    {
+      "author": "multiformats",
+      "hash": "QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu",
+      "name": "go-multihash",
+      "version": "1.0.2"
     }
   ],
   "gxVersion": "0.11.0",

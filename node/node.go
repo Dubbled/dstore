@@ -15,19 +15,29 @@ import (
 	peer "gx/ipfs/QmZcUPvPhD1Xvk6mwijYF8AfR3mG31S1YsEfHG4khrFPRr/go-libp2p-peer"
 	host "gx/ipfs/QmbzbRyd22gcW92U1rA2yKagB3myMYhk45XBknJ49F9XWJ/go-libp2p-host"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
 type Node struct {
 	Config *config.Config
 	Host   host.Host
+	Log    *log.Logger
 }
 
 var nodes []*Node
 
 func Init(cfg *config.Config) (*Node, error) {
-	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip%s/%s/tcp/%s", cfg.ListenAddr[0], cfg.ListenAddr[1], cfg.ListenAddr[2]))
+	logFile, err := os.Create("node.log")
+	if err != nil {
+		return nil, err
+	}
 
+	logger := log.New(logFile, "", 0)
+	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip%s/%s/tcp/%s", cfg.ListenAddr[0], cfg.ListenAddr[1], cfg.ListenAddr[2]))
+	if err != nil {
+		return nil, err
+	}
 	ps := pstore.NewPeerstore()
 
 	// Read private key from key directory.
@@ -35,6 +45,7 @@ func Init(cfg *config.Config) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	peerID, err := peer.IDFromPublicKey(pubkey)
 	if err != nil {
 		return nil, err
@@ -43,17 +54,28 @@ func Init(cfg *config.Config) (*Node, error) {
 	ps.AddPubKey(peerID, pubkey)
 
 	ctx := context.Background()
+
 	netw, err := swarm.NewNetwork(ctx, []ma.Multiaddr{addr}, peerID, ps, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	host := bhost.New(netw)
-	node := &Node{cfg, host}
+	node := &Node{cfg, host, logger}
+	node.Log.Printf("Initialized node %s", node.Host.ID().Pretty())
+
 	host.SetStreamHandler("/identify", func(s net.Stream) {
 		Handler(node, s)
 
 	})
+
+	for i, remote := range cfg.Bootstrap {
+		err := node.Identify(remote)
+		if err != nil {
+			fmt.Printf("Failed to identify to bootstrap node %d.\n", i)
+			node.Log.Printf("%#v\n", err)
+		}
+	}
 
 	nodes = append(nodes, node)
 	return node, nil

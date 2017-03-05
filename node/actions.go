@@ -16,20 +16,25 @@ func (n *Node) Identify(target config.RHost) error {
 	if err != nil {
 		return err
 	}
-	peerID, err := peer.IDFromString(target.PeerID)
+
+	peerID, err := peer.IDB58Decode(target.PeerID)
 	if err != nil {
 		return err
 	}
+
 	n.Host.Peerstore().AddAddr(peerID, maddr, pstore.PermanentAddrTTL)
 	s, err := n.Host.NewStream(ctx, peerID, "/identify")
 	if err != nil {
 		return err
 	}
+
 	buf := make([]byte, 1024)
 	i, err := s.Read(buf)
 	if err != nil {
 		return err
 	}
+
+	n.Log.Printf("%s", string(buf[:i]))
 
 	// Get public key from buffer.
 	rkey, err := crypto.UnmarshalRsaPublicKey(buf[:i])
@@ -37,18 +42,23 @@ func (n *Node) Identify(target config.RHost) error {
 		return err
 	}
 
-	encSec, err := rkey.Encrypt([]byte(n.Config.Secret + peerID.Pretty())) // Encrypt secret with salt as Peer ID
+	n.Log.Printf("Got public key from remote peer.\n")
+	encSec, err := rkey.Encrypt([]byte(n.Config.Secret)) // Encrypt secret with salt as Peer ID
 	if err != nil {
 		return err
 	}
+
 	_, err = s.Write(encSec)
 	if err != nil {
 		return err
 	}
+	n.Log.Printf("Sending encrypted secret to peer.\n")
+
 	buf = make([]byte, 1024)
 	i, err = s.Read(buf)
 	respCode := string(buf[:i])
 	if respCode != "200" {
+		n.Log.Printf("Failed to identify to peer.\n")
 		return errors.New("Failed to identify to peer")
 	}
 	return nil
