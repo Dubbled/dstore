@@ -3,14 +3,13 @@ package node
 import (
 	"context"
 	"errors"
-	"gitlab.com/dubbled/dstore/config"
 	crypto "gx/ipfs/QmNiCwBNA8MWDADTFVq1BonUEJbS2SvjAoNkZZrhEwcuUi/go-libp2p-crypto"
 	pstore "gx/ipfs/QmQMQ2RUjnaEEX8ybmrhuFFGhAwPjyL1Eo6ZoJGD7aAccM/go-libp2p-peerstore"
 	ma "gx/ipfs/QmSWLfmj5frN9xVLMMN846dMDriy5wN5jeghUm7aTW3DAG/go-multiaddr"
 	peer "gx/ipfs/QmZcUPvPhD1Xvk6mwijYF8AfR3mG31S1YsEfHG4khrFPRr/go-libp2p-peer"
 )
 
-func (n *Node) Identify(target config.RHost) error {
+func (n *Node) Identify(target RHost) error {
 	ctx := context.Background()
 	maddr, err := ma.NewMultiaddr(target.Addr)
 	if err != nil {
@@ -33,8 +32,6 @@ func (n *Node) Identify(target config.RHost) error {
 	if err != nil {
 		return err
 	}
-
-	n.Log.Printf("%s", string(buf[:i]))
 
 	// Get public key from buffer.
 	rkey, err := crypto.UnmarshalRsaPublicKey(buf[:i])

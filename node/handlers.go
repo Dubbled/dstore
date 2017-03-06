@@ -17,6 +17,8 @@ func Handler(n *Node, s net.Stream) {
 		err := IdentifyRemote(n, s)
 		if err != nil {
 			log.Printf("Failed to identify remote peer: %s", s.Conn().RemotePeer().Pretty())
+		} else {
+			n.Log.Printf("Remote peer successfully authenticated.\n")
 		}
 	default:
 		n.Log.Printf("Unknown protocol %s\n", proto[0][1:])
@@ -51,13 +53,11 @@ func IdentifyRemote(n *Node, s net.Stream) error {
 		if err != nil {
 			return err
 		}
-		n.Log.Printf("Remote peer successfully authenticated.\n")
 	} else {
 		_, err = s.Write([]byte("400"))
 		if err != nil {
 			return err
 		}
-		n.Log.Printf("Failed to authenticate remote peer.\n")
 	}
 	return nil
 }

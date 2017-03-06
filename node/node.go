@@ -4,8 +4,8 @@ package node
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"gitlab.com/dubbled/dstore/config"
 	crypto "gx/ipfs/QmNiCwBNA8MWDADTFVq1BonUEJbS2SvjAoNkZZrhEwcuUi/go-libp2p-crypto"
 	pstore "gx/ipfs/QmQMQ2RUjnaEEX8ybmrhuFFGhAwPjyL1Eo6ZoJGD7aAccM/go-libp2p-peerstore"
 	net "gx/ipfs/QmRuZnMorqodado1yeTQiv1i9rmtKj29CjPSsBKM7DFXV4/go-libp2p-net"
@@ -20,14 +20,38 @@ import (
 )
 
 type Node struct {
-	Config *config.Config
+	Config *Config
 	Host   host.Host
 	Log    *log.Logger
 }
 
+type Config struct {
+	ListenAddr []string `json:"listen"`
+	Bootstrap  []RHost  `json:"bootstrap"`
+	Secret     string   `json:"secret"`
+}
+
+type RHost struct {
+	PeerID string `json:"peer"`
+	Addr   string `json:"address"`
+}
+
+func ReadCfg(path string) (*Config, error) {
+	var cfg Config
+	fi, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(fi, &cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
 var nodes []*Node
 
-func Init(cfg *config.Config) (*Node, error) {
+func Init(cfg *Config) (*Node, error) {
 	logFile, err := os.Create("node.log")
 	if err != nil {
 		return nil, err
