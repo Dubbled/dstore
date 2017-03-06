@@ -3,6 +3,7 @@ package node
 import (
 	net "gx/ipfs/QmRuZnMorqodado1yeTQiv1i9rmtKj29CjPSsBKM7DFXV4/go-libp2p-net"
 	// ma "gx/ipfs/QmSWLfmj5frN9xVLMMN846dMDriy5wN5jeghUm7aTW3DAG/go-multiaddr"
+	crypto "gx/ipfs/QmNiCwBNA8MWDADTFVq1BonUEJbS2SvjAoNkZZrhEwcuUi/go-libp2p-crypto"
 	"log"
 	"strings"
 )
@@ -24,11 +25,12 @@ func Handler(n *Node, s net.Stream) {
 
 func IdentifyRemote(n *Node, s net.Stream) error {
 	// Send local node public key to remote peer.
-	pkey, err := s.Conn().LocalPrivateKey().GetPublic().Bytes()
+	pkey := s.Conn().LocalPrivateKey().GetPublic().(*crypto.RsaPublicKey)
+	pkb, err := crypto.MarshalRsaPublicKey(pkey)
 	if err != nil {
 		return err
 	}
-	_, err = s.Write(pkey)
+	_, err = s.Write(pkb)
 	if err != nil {
 		return err
 	}
@@ -39,8 +41,12 @@ func IdentifyRemote(n *Node, s net.Stream) error {
 		return err
 	}
 
-	secret := n.Config.Secret
-	if string(buf[:i]) == secret {
+	secret, err := s.Conn().LocalPrivateKey().(*crypto.RsaPrivateKey).Decrypt(buf[:i])
+	if err != nil {
+		return err
+	}
+	n.Log.Printf("Received %s as secret from peer.", string(secret))
+	if string(secret) == n.Config.Secret {
 		_, err = s.Write([]byte("200"))
 		if err != nil {
 			return err

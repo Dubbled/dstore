@@ -109,7 +109,7 @@ func getkeys() (crypto.PrivKey, crypto.PubKey, error) {
 	var pubkey crypto.PubKey
 	pdat, err := ioutil.ReadFile("keys/priv.key")
 	if err != nil {
-		privkey, pubkey, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
+		privkey, pubkey, err := crypto.GenerateKeyPair(crypto.RSA, 512)
 		if err != nil {
 			return nil, nil, err
 		}

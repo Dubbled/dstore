@@ -43,7 +43,7 @@ func (n *Node) Identify(target config.RHost) error {
 	}
 
 	n.Log.Printf("Got public key from remote peer.\n")
-	encSec, err := rkey.Encrypt([]byte(n.Config.Secret)) // Encrypt secret with salt as Peer ID
+	encSec, err := rkey.Encrypt([]byte(n.Config.Secret))
 	if err != nil {
 		return err
 	}

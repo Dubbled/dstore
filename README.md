@@ -1,5 +1,4 @@
 # dstore
----
 Distributed storage system based on go-libp2p.
 
 ### Planned Features
