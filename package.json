@@ -58,12 +58,6 @@
       "hash": "QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu",
       "name": "go-multihash",
       "version": "1.0.2"
-    },
-    {
-      "author": "whyrusleeping",
-      "hash": "QmSwXLW21S3TsFHsNELc4a4Y7Kp8wToqnBBXWYvggBVLQY",
-      "name": "go-testutil",
-      "version": "1.1.6"
     }
   ],
   "gxVersion": "0.11.0",

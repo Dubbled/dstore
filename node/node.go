@@ -5,6 +5,7 @@ package node
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	crypto "gx/ipfs/QmNiCwBNA8MWDADTFVq1BonUEJbS2SvjAoNkZZrhEwcuUi/go-libp2p-crypto"
 	pstore "gx/ipfs/QmQMQ2RUjnaEEX8ybmrhuFFGhAwPjyL1Eo6ZoJGD7aAccM/go-libp2p-peerstore"
 	net "gx/ipfs/QmRuZnMorqodado1yeTQiv1i9rmtKj29CjPSsBKM7DFXV4/go-libp2p-net"
@@ -21,7 +22,7 @@ import (
 type Node struct {
 	Config *Config
 	Host   host.Host
-	Log    *log.Logger
+	Log    chan string
 }
 
 type Config struct {
@@ -49,28 +50,34 @@ func ReadCfg(path string) (*Config, error) {
 }
 
 func Init(cfg *Config) (*Node, error) {
-	logFile, err := os.Create("node.log")
-	if err != nil {
-		return nil, err
-	}
-
-	logger := log.New(logFile, "", 0)
-
 	node := &Node{}
-	node.Log = logger
+	node.Log = make(chan string, 5)
 	node.Config = cfg
 
 	return node, nil
 }
 
-func (node *Node) OpenHandlers() {
-	node.Host.SetStreamHandler("/identify", func(s net.Stream) {
-		Handler(node, s)
+func (n *Node) Logger() {
+	logFile, err := os.Create("node.log")
+	if err != nil {
+		fmt.Println("Failed to create log file!")
+		return
+	}
+
+	logger := log.New(logFile, "", 0)
+	for msg := range n.Log {
+		logger.Println(msg)
+	}
+}
+
+func (n *Node) OpenHandlers() {
+	n.Host.SetStreamHandler("/identify", func(s net.Stream) {
+		Handler(n, s)
 	})
 }
 
-func (node *Node) Start() error {
-	addr, err := ma.NewMultiaddr(node.Config.ListenAddr)
+func (n *Node) Start() error {
+	addr, err := ma.NewMultiaddr(n.Config.ListenAddr)
 	if err != nil {
 		return err
 	}
@@ -97,14 +104,14 @@ func (node *Node) Start() error {
 
 	host := bhost.New(netw)
 
-	node.Host = host
-	node.OpenHandlers()
+	n.Host = host
+	n.OpenHandlers()
 
 	return nil
 }
 
-func (node *Node) Terminate() error {
-	err := node.Host.Close()
+func (n *Node) Terminate() error {
+	err := n.Host.Close()
 	if err != nil {
 		return err
 	}

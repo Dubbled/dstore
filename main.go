@@ -22,7 +22,8 @@ func main() {
 	for i, remote := range cfg.Bootstrap {
 		err := node.Identify(remote)
 		if err != nil {
-			node.Log.Printf("Failed to identify to bootstrap node %d.", i)
+			fmt.Printf("Failed to identify to bootstrap node %d.", i)
+			node.Log <- fmt.Sprintf("Failed to identify to bootstrap node %d.", i)
 		}
 	}
 
