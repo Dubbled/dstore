@@ -9,7 +9,7 @@ import (
 	peer "gx/ipfs/QmZcUPvPhD1Xvk6mwijYF8AfR3mG31S1YsEfHG4khrFPRr/go-libp2p-peer"
 )
 
-func (n *Node) Identify(target RHost) error {
+func (node *Node) Identify(target RHost) error {
 	ctx := context.Background()
 	maddr, err := ma.NewMultiaddr(target.Addr)
 	if err != nil {
@@ -21,8 +21,8 @@ func (n *Node) Identify(target RHost) error {
 		return err
 	}
 
-	n.Host.Peerstore().AddAddr(peerID, maddr, pstore.PermanentAddrTTL)
-	s, err := n.Host.NewStream(ctx, peerID, "/identify")
+	node.Host.Peerstore().AddAddr(peerID, maddr, pstore.PermanentAddrTTL)
+	s, err := node.Host.NewStream(ctx, peerID, "/identify")
 	if err != nil {
 		return err
 	}
@@ -39,8 +39,8 @@ func (n *Node) Identify(target RHost) error {
 		return err
 	}
 
-	n.Log.Printf("Got public key from remote peer.\n")
-	encSec, err := rkey.Encrypt([]byte(n.Config.Secret))
+	node.Log.Printf("Got public key from remote peer.\n")
+	encSec, err := rkey.Encrypt([]byte(node.Config.Secret))
 	if err != nil {
 		return err
 	}
@@ -49,13 +49,13 @@ func (n *Node) Identify(target RHost) error {
 	if err != nil {
 		return err
 	}
-	n.Log.Printf("Sending encrypted secret to peer.\n")
+	node.Log.Printf("Sending encrypted secret to peer.\n")
 
 	buf = make([]byte, 1024)
 	i, err = s.Read(buf)
 	respCode := string(buf[:i])
 	if respCode != "200" {
-		n.Log.Printf("Failed to identify to peer.\n")
+		node.Log.Printf("Failed to identify to peer.\n")
 		return errors.New("Failed to identify to peer")
 	}
 	return nil

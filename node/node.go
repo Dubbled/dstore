@@ -5,7 +5,6 @@ package node
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	crypto "gx/ipfs/QmNiCwBNA8MWDADTFVq1BonUEJbS2SvjAoNkZZrhEwcuUi/go-libp2p-crypto"
 	pstore "gx/ipfs/QmQMQ2RUjnaEEX8ybmrhuFFGhAwPjyL1Eo6ZoJGD7aAccM/go-libp2p-peerstore"
 	net "gx/ipfs/QmRuZnMorqodado1yeTQiv1i9rmtKj29CjPSsBKM7DFXV4/go-libp2p-net"
@@ -26,9 +25,9 @@ type Node struct {
 }
 
 type Config struct {
-	ListenAddr []string `json:"listen"`
-	Bootstrap  []RHost  `json:"bootstrap"`
-	Secret     string   `json:"secret"`
+	ListenAddr string  `json:"listen"`
+	Bootstrap  []RHost `json:"bootstrap"`
+	Secret     string  `json:"secret"`
 }
 
 type RHost struct {
@@ -49,8 +48,6 @@ func ReadCfg(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-var nodes []*Node
-
 func Init(cfg *Config) (*Node, error) {
 	logFile, err := os.Create("node.log")
 	if err != nil {
@@ -58,75 +55,61 @@ func Init(cfg *Config) (*Node, error) {
 	}
 
 	logger := log.New(logFile, "", 0)
-	addr, err := ma.NewMultiaddr(fmt.Sprintf("/ip%s/%s/tcp/%s", cfg.ListenAddr[0], cfg.ListenAddr[1], cfg.ListenAddr[2]))
-	if err != nil {
-		return nil, err
-	}
-	ps := pstore.NewPeerstore()
 
-	// Read private key from key directory.
+	node := &Node{}
+	node.Log = logger
+	node.Config = cfg
+
+	return node, nil
+}
+
+func (node *Node) OpenHandlers() {
+	node.Host.SetStreamHandler("/identify", func(s net.Stream) {
+		Handler(node, s)
+	})
+}
+
+func (node *Node) Start() error {
+	addr, err := ma.NewMultiaddr(node.Config.ListenAddr)
+	if err != nil {
+		return err
+	}
+
+	ps := pstore.NewPeerstore()
 	privkey, pubkey, err := getkeys()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	peerID, err := peer.IDFromPublicKey(pubkey)
 	if err != nil {
-		return nil, err
+		return err
 	}
+
 	ps.AddPrivKey(peerID, privkey)
 	ps.AddPubKey(peerID, pubkey)
-
 	ctx := context.Background()
 
 	netw, err := swarm.NewNetwork(ctx, []ma.Multiaddr{addr}, peerID, ps, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	host := bhost.New(netw)
-	node := &Node{cfg, host, logger}
-	node.Log.Printf("Initialized node %s", node.Host.ID().Pretty())
 
-	host.SetStreamHandler("/identify", func(s net.Stream) {
-		Handler(node, s)
+	node.Host = host
+	node.OpenHandlers()
 
-	})
-
-	for i, remote := range cfg.Bootstrap {
-		err := node.Identify(remote)
-		if err != nil {
-			fmt.Printf("Failed to identify to bootstrap node %d.\n", i)
-			node.Log.Printf("Failed to identify to bootstrap node %d.\n", i)
-		}
-	}
-
-	nodes = append(nodes, node)
-	return node, nil
+	return nil
 }
 
-func (n *Node) bootstrap() int {
-	i := 0
-	for _, rhost := range n.Config.Bootstrap {
-		err := n.Identify(rhost)
-		if err != nil {
-			continue
-		} else {
-			i++
-		}
-	}
-	return i
-}
-
-func (n *Node) Terminate() error {
-	err := n.Host.Close()
+func (node *Node) Terminate() error {
+	err := node.Host.Close()
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-// Load or generate RSA keys for node.
 
 func getkeys() (crypto.PrivKey, crypto.PubKey, error) {
 	var privkey crypto.PrivKey
