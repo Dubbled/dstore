@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	crypto "gx/ipfs/QmNiCwBNA8MWDADTFVq1BonUEJbS2SvjAoNkZZrhEwcuUi/go-libp2p-crypto"
@@ -13,11 +14,6 @@ import (
 func (n *Node) Identify(target RHost) error {
 	ctx := context.Background()
 	maddr, err := ma.NewMultiaddr(target.Addr)
-	if err != nil {
-		return err
-	}
-
-	peerID, err := peer.IDB58Decode(target.PeerID)
 	if err != nil {
 		return err
 	}
@@ -60,8 +56,32 @@ func (n *Node) Identify(target RHost) error {
 		n.Log <- fmt.Sprintf("Successfully identified to peer %s", peerID.Pretty())
 		n.Host.Peerstore().AddPubKey(peerID, rkey)
 		return nil
-	} else {
-		n.Log <- fmt.Sprintf("Failed to identify to peer %s", peerID.Pretty())
-		return errors.New(respCode)
+	}
+
+	n.Log <- fmt.Sprintf("Error: %s: Failed to identify to peer %s", respCode, peerID.Pretty())
+	return errors.New(respCode)
+}
+
+func (n *Node) Request(id peer.ID, addr ma.Multiaddr, query []string) (map[string]interface{}, error) {
+	ctx := context.Background()
+	s, err := n.Host.NewStream(ctx, id, "/request")
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = s.Write(data)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := make([]byte, 8192)
+	i, err := s.Read(resp)
+	if err != nil {
+		return nil, err
 	}
 }

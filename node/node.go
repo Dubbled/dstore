@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/boltdb/bolt"
 	swarm "gx/ipfs/QmNT1JbT5S89ew7kozkHoX5KUG1rfPZvTU3oMDRyJua7rU/go-libp2p-swarm"
 	crypto "gx/ipfs/QmNiCwBNA8MWDADTFVq1BonUEJbS2SvjAoNkZZrhEwcuUi/go-libp2p-crypto"
 	pstore "gx/ipfs/QmQMQ2RUjnaEEX8ybmrhuFFGhAwPjyL1Eo6ZoJGD7aAccM/go-libp2p-peerstore"
@@ -23,6 +24,7 @@ type Node struct {
 	Config *Config
 	Host   host.Host
 	Log    chan string
+	DB     *bolt.DB
 }
 
 type Config struct {
@@ -32,8 +34,10 @@ type Config struct {
 }
 
 type RHost struct {
-	PeerID string `json:"peer"`
+	Peer   string `json:"peer"`
 	Addr   string `json:"address"`
+	Maddr  ma.Multiaddr
+	PeerID peer.ID
 }
 
 func ReadCfg(path string) (*Config, error) {
@@ -42,10 +46,23 @@ func ReadCfg(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = json.Unmarshal(fi, &cfg)
 	if err != nil {
 		return nil, err
 	}
+
+	for _, r := range cfg.Bootstrap {
+		r.Maddr, err = ma.NewMultiaddr(r.Addr)
+		if err != nil {
+			return err, nil
+		}
+		r.PeerID, err = peer.IDB58Decode(r.Peer)
+		if err != nil {
+			return err, nil
+		}
+	}
+
 	return &cfg, nil
 }
 
@@ -53,6 +70,24 @@ func Init(cfg *Config) (*Node, error) {
 	node := &Node{}
 	node.Log = make(chan string, 5)
 	node.Config = cfg
+
+	var err error
+	node.DB, err = bolt.Open("datastore", 0600, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := db.Begin(true)
+	if Err != nil {
+		return nil, err
+	}
+	_, err = tx.CreateBucketIfNotExists()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
 
 	return node, nil
 }
