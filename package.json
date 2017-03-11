@@ -13,9 +13,9 @@
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmY8hduizbuACvYmL4aZQbpFeKhEQJ1Nom2jY6kv6rL8Gf",
+      "hash": "QmNT1JbT5S89ew7kozkHoX5KUG1rfPZvTU3oMDRyJua7rU",
       "name": "go-libp2p-swarm",
-      "version": "1.6.10"
+      "version": "1.6.12"
     },
     {
       "author": "whyrusleeping",
@@ -58,6 +58,18 @@
       "hash": "QmbZ6Cee2uHjG7hf19qLHppgKDRtaG4CVtMzdmK9VCVqLu",
       "name": "go-multihash",
       "version": "1.0.2"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmSwXLW21S3TsFHsNELc4a4Y7Kp8wToqnBBXWYvggBVLQY",
+      "name": "go-testutil",
+      "version": "1.1.6"
+    },
+    {
+      "author": "whyrusleeping",
+      "hash": "QmSNJRX4uphb3Eyp69uYbpRVvgqjPxfjnJmjcdMWkDH5Pn",
+      "name": "go-libp2p",
+      "version": "4.3.9"
     }
   ],
   "gxVersion": "0.11.0",
