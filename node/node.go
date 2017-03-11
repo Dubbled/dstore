@@ -106,8 +106,18 @@ func (n *Node) Start() error {
 
 	n.Host = host
 	n.OpenHandlers()
-
 	return nil
+}
+
+func (n *Node) Bootstrap() {
+	i := 0
+	for _, r := range n.Config.Bootstrap {
+		err := n.Identify(r)
+		if err != nil {
+			i++
+		}
+	}
+	n.Log <- fmt.Sprintf("Successfully identified to %d/%d peers.", i, len(n.Config.Bootstrap))
 }
 
 func (n *Node) Terminate() error {

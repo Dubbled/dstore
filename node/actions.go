@@ -40,7 +40,7 @@ func (n *Node) Identify(target RHost) error {
 		return err
 	}
 
-	n.Log <- "Got public key from remote peer."
+	n.Log <- fmt.Sprintf("Got public key from remote peer %s", peerID.Pretty())
 	encSec, err := rkey.Encrypt([]byte(n.Config.Secret))
 	if err != nil {
 		return err
@@ -50,17 +50,18 @@ func (n *Node) Identify(target RHost) error {
 	if err != nil {
 		return err
 	}
-	n.Log <- "Sending encrypted secret to peer."
+
+	n.Log <- fmt.Sprintf("Sending encrypted secret to peer %s", peerID.Pretty())
 
 	buf = make([]byte, 1024)
 	i, err = s.Read(buf)
 	respCode := string(buf[:i])
-	if respCode != "200" {
-		n.Log <- "Failed to identify to peer."
-		return errors.New("Failed to identify to peer")
-	} else {
-		n.Log <- fmt.Sprintf("Successfully identified to peer %s", peerID)
+	if respCode == "200" {
+		n.Log <- fmt.Sprintf("Successfully identified to peer %s", peerID.Pretty())
 		n.Host.Peerstore().AddPubKey(peerID, rkey)
+		return nil
+	} else {
+		n.Log <- fmt.Sprintf("Failed to identify to peer %s", peerID.Pretty())
+		return errors.New(respCode)
 	}
-	return nil
 }

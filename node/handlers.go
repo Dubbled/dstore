@@ -36,7 +36,7 @@ func IdentifyRemote(n *Node, s net.Stream) error {
 	if err != nil {
 		return err
 	}
-	n.Log <- "Sent public key to remote peer."
+	n.Log <- fmt.Sprintf("Sent public key to remote peer %s", s.Conn().RemotePeer().Pretty())
 	buf := make([]byte, 1024)
 	i, err := s.Read(buf)
 	if err != nil {
@@ -47,7 +47,7 @@ func IdentifyRemote(n *Node, s net.Stream) error {
 	if err != nil {
 		return err
 	}
-	n.Log <- fmt.Sprintf("Received %s as secret from peer.", string(secret))
+	n.Log <- fmt.Sprintf("Received %s as secret from peer %s", string(secret), s.Conn().RemotePeer().Pretty())
 	if string(secret) == n.Config.Secret {
 		_, err = s.Write([]byte("200"))
 		if err != nil {
